@@ -1,0 +1,5 @@
+#+xcvb
+(module
+ (:fullname "asdf-encodings"
+  :depends-on ("asdf-encodings")
+  :supersedes-asdf ("asdf-encodings")))
