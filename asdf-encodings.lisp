@@ -20,7 +20,7 @@
   ;; We also accept some common aliases
   '((:default :default) ; the implementation's default, which may vary depending on the environment.
     (:utf-8 :utf8 :u8) ; our preferred default, environment-independent.
-    (:ascii :us-ascii :iso-646-us :ANSI_X3.4-1968) ; in practice the lowest common denominator
+    (:us-ascii :ascii :iso-646-us :ANSI_X3.4-1968) ; in practice the lowest common denominator
     (:iso-646 :|646|) ; even lower common denominator for old international encodings
     ;;; ISO/IEC 8859
     (:iso-8859-1 :iso8859-1 :latin1 :latin-1 :l1 ; direct mapping to first 256 unicode characters
@@ -149,7 +149,7 @@
 (defvar *normalized-encodings* (make-hash-table))
 
 #+lispworks
-(defun find-lispworks-encoding (encoding)
+(defun find-implementation-encoding (encoding)
   (or
    (case encoding
      ((:latin-1 :ascii :utf-8 :sjis :euc-jp :macos-roman) encoding) ;; which is jis?
@@ -163,13 +163,20 @@
               (parse-integer s :start 3 :junk-allowed t)
             (and i (= l (length s)) `(win32:code-page :id ,i)))))))
 
+#+scl
+(defun find-implementation-encoding (encoding)
+  (and (or (lisp::encoding-character-width encoding)
+           (member encoding '(:utf-8 :utf-16 :utf-16le :utf-16be)))
+       encoding))
+
+#-(or lispworks scl)
 (defun find-implementation-encoding (encoding)
   (declare (ignorable encoding)) nil ;; default, for unsupported implementations
   #+abcl encoding ;; pass-through, probably only correct in a few usual cases.
   #+allegro (excl:find-external-format encoding)
   #+clozure (ignore-errors (ccl::normalize-external-format t encoding))
   #+clisp (asdf:find-symbol* encoding :charset)
-  #+(or cmu scl) (stream::find-external-format encoding)
+  #+cmu (stream::find-external-format encoding)
   #+ecl (ignore-errors (ext:make-encoding encoding))
   #+lispworks (find-lispworks-encoding encoding)
   #+sbcl (and (sb-impl::get-external-format encoding) encoding))
