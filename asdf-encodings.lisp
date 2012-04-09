@@ -27,7 +27,7 @@
      :iso_8859-1 :iso-ir-100 :csISOLatin1 :ibm819 :cp819 :windows-28591)
     (:iso-8859-2 :iso8859-2 :latin2 :latin-2) ; eastern european; not to be confused with dos-cp852
     (:iso-8859-3 :iso8859-3 :latin3 :latin-3) ; esperanto, maltese, (turkish)
-    (:iso-8859-4 :iso8859-4 :latin-4 :latin4) ; prefer latin6, utf-8.
+    (:iso-8859-4 :iso8859-4 :latin4 :latin-4) ; prefer latin6, utf-8.
     (:iso-8859-5 :iso8859-5) ; cyrillic; prefer koi8-r, or utf-8
     (:iso-8859-6 :iso8859-6) ; arabic
     (:iso-8859-7 :iso8859-7 :ecma-118) ; greek
@@ -165,8 +165,8 @@
 
 #+scl
 (defun find-implementation-encoding (encoding)
-  (and (or (lisp::encoding-character-width encoding)
-           (member encoding '(:utf-8 :utf-16 :utf-16le :utf-16be)))
+  (and (or (lisp::encoding-character-width encoding) ; only works for fixed-width
+           (member encoding '(:utf-8 :utf-16 :utf-16le :utf-16be))) ; more may exist
        encoding))
 
 #-(or lispworks scl)
@@ -207,7 +207,6 @@
 (defun register-asdf-encodings ()
   (setf asdf:*encoding-external-format-hook* 'encoding-external-format)
   (values))
-
 
 ;;; Load-time Initialization.
 (initialize-normalized-encodings)

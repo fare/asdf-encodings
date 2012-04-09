@@ -2,12 +2,12 @@ ASDF-ENCODINGS
 
 This library allows you to use ASDF with Lisp source files
 that use an encoding different from either ASCII or UTF-8.
-It depends on ASDF 2.21 or later (actually 2.20.7 or later)
+It depends on ASDF 2.21 or later (actually 2.20.7 or later).
 
 TODO:
-(1) actually support more than utf-8, latin1 and default.
+(1) actually support more implementations.
 (2) Add a test suite.
-(3) test it on more than sbcl, ccl, clisp.
+(3) Test it.
 
 
 ==== Exported Functionality ====
@@ -20,10 +20,13 @@ It issues warnings or errors when no matching external-format is available,
 depending on asdf-encodings.
 
 
-ENCODING-EXTERNAL-FORMAT (ENCODING)
+function ENCODING-EXTERNAL-FORMAT (ENCODING &KEY (ON-ERROR *ON-UNSUPPORTED-ENCODING*))
   This function takes a keyword which is one of
   :default
   :utf-8 :utf8
   :latin1 :latin-1 :iso-8859-1
+  a whole lot of other possibilities as per asdf-encodings::*encodings*
   and returns a value suitable for use as :external-format argument to
   the current implementation's CL:OPEN, CL:LOAD or CL:COMPILE-FILE functions.
+  If the encoding is not supported on this implementation, the ON-ERROR
+  argument, which is one of :ERROR, :WARN, NIL, specifies what to do.
