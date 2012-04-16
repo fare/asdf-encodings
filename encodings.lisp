@@ -1,12 +1,4 @@
-(in-package :cl-user)
-
-(defpackage :asdf-encodings
-  (:use :cl)
-  (:export
-   #:encoding-external-format
-   #:normalize-encoding
-   #:find-implementation-encoding
-   #:*on-unsupported-encoding*))
+#+xcvb (module (:depends-on ("pkgdcl")))
 
 (in-package :asdf-encodings)
 
@@ -18,6 +10,8 @@
   ;; We prefer the main name in Wikipedia,
   ;; but use dashes whenever Wikipedia uses underscores.
   ;; We also accept some common aliases
+  ;; We probably should grab an official list from the IANA or something,
+  ;; and match it against encodings known to any and all Lisp implementation???
   '((:default :default) ; the implementation's default, which may vary depending on the environment.
     (:utf-8 :utf8 :u8) ; our preferred default, environment-independent.
     (:us-ascii :ascii :iso-646-us :ANSI_X3.4-1968) ; in practice the lowest common denominator
@@ -148,11 +142,19 @@
 
 (defvar *normalized-encodings* (make-hash-table))
 
-#+lispworks
 (defun find-implementation-encoding (encoding)
+  (declare (ignorable encoding)) nil ;; default, for unsupported implementations
+  #+abcl (normalize-encoding encoding) ;; we bootstrap that in initialize-normalized-encodings
+  #+allegro (excl:find-external-format encoding)
+  #+clozure (ignore-errors (ccl::normalize-external-format t encoding))
+  #+clisp (asdf:find-symbol* encoding :charset)
+  #+cmu (stream::find-external-format encoding)
+  #+ecl (ignore-errors (ext:make-encoding encoding))
+  #+lispworks
   (or
    (case encoding
-     ((:latin-1 :ascii :utf-8 :sjis :euc-jp :macos-roman) encoding) ;; which is jis?
+     ;; lispworks supports a :jis, but which encoding is it?
+     ((:latin-1 :ascii :utf-8 :sjis :euc-jp :macos-roman) encoding)
      ((:ucs-2) :unicode)
      ((:ucs-2-le) '(:unicode :little-endian t))
      ((:ucs-2-be) '(:unicode :little-endian nil)))
@@ -161,27 +163,18 @@
      (and (< 3 (length s)) (string-equal "cp-" s :end2 3)
           (multiple-value-bind (i l)
               (parse-integer s :start 3 :junk-allowed t)
-            (and i (= l (length s)) `(win32:code-page :id ,i)))))))
-
-#+scl
-(defun find-implementation-encoding (encoding)
-  (and (or (lisp::encoding-character-width encoding) ; only works for fixed-width
-           (member encoding '(:utf-8 :utf-16 :utf-16le :utf-16be))) ; more may exist
-       encoding))
-
-#-(or lispworks scl)
-(defun find-implementation-encoding (encoding)
-  (declare (ignorable encoding)) nil ;; default, for unsupported implementations
-  #+abcl encoding ;; pass-through, probably only correct in a few usual cases.
-  #+allegro (excl:find-external-format encoding)
-  #+clozure (ignore-errors (ccl::normalize-external-format t encoding))
-  #+clisp (asdf:find-symbol* encoding :charset)
-  #+cmu (stream::find-external-format encoding)
-  #+ecl (ignore-errors (ext:make-encoding encoding))
-  #+lispworks (find-lispworks-encoding encoding)
-  #+sbcl (and (sb-impl::get-external-format encoding) encoding))
+            (and i (= l (length s)) `(win32:code-page :id ,i))))))
+  #+sbcl (and (sb-impl::get-external-format encoding) encoding)
+  #+scl (and (or (lisp::encoding-character-width encoding) ; only works for fixed-width
+                 (member encoding '(:utf-8 :utf-16 :utf-16le :utf-16be))) ; more may exist
+             encoding))
 
 (defun initialize-normalized-encodings (&optional warn)
+  #+abcl
+  (loop :for name :in (let ((ae (find-symbol* :available-encodings :sys)))
+                        (when ae (funcall ae)))
+    :for n = (intern (string name) :keyword) ;; is this needed?
+    :do (setf (gethash n *normalized-encodings*) name))
   (loop :for names :in *encodings*
     :for (name encoding) = (loop :for n :in names
                              :for e = (find-implementation-encoding n)
@@ -195,19 +188,3 @@
 
 (defun normalize-encoding (encoding)
   (values (gethash encoding *normalized-encodings*)))
-
-(defun encoding-external-format (encoding &key (on-error *on-unsupported-encoding*))
-  (or (find-implementation-encoding (or (normalize-encoding encoding) encoding))
-      (ecase on-error
-        ((:error) (cerror "continue using :default" "unsupported encoding ~S" encoding) nil)
-        ((:warn) (warn "unsupported encoding ~S, falling back to using :default " encoding) nil)
-        ((nil) nil))
-      :default))
-
-(defun register-asdf-encodings ()
-  (setf asdf:*encoding-external-format-hook* 'encoding-external-format)
-  (values))
-
-;;; Load-time Initialization.
-(initialize-normalized-encodings)
-(register-asdf-encodings)

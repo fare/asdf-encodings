@@ -1,5 +1,7 @@
+;;-*- Lisp -*-
 #+xcvb
 (module
  (:fullname "asdf-encodings"
-  :depends-on ("asdf-encodings")
+  :depends-on ("pkgdcl" "encodings" "autodetect"
+               "asdf-support" "initialization")
   :supersedes-asdf ("asdf-encodings")))
