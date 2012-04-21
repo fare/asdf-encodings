@@ -12,6 +12,6 @@
       :default))
 
 (defun register-asdf-encodings ()
-  (setf asdf:*encoding-external-format-hook* 'encoding-external-format)
+  (setf asdf:*encoding-external-format-hook* 'encoding-external-format
+        asdf:*encoding-detection-hook* 'detect-encoding)
   (values))
-
