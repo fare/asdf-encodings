@@ -3,7 +3,8 @@
 (in-package :asdf-encodings)
 
 (defun encoding-external-format (encoding &key (on-error *on-unsupported-encoding*))
-  (or (find-implementation-encoding (or (normalize-encoding encoding) encoding))
+  (or (and (eq encoding :default) :default)
+      (find-implementation-encoding (or (normalize-encoding encoding) encoding))
       (ecase on-error
         ((:error) (cerror "continue using :default" "unsupported encoding ~S" encoding) nil)
         ((:warn) (warn "unsupported encoding ~S, falling back to using :default " encoding) nil)

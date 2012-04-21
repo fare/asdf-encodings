@@ -1,5 +1,7 @@
 #+xcvb (module (:depends-on ("pkgdcl")))
 
+;;; http://www.iana.org/assignments/character-sets
+
 (in-package :asdf-encodings)
 
 (defvar *on-unsupported-encoding* :error
@@ -12,8 +14,7 @@
   ;; We also accept some common aliases
   ;; We probably should grab an official list from the IANA or something,
   ;; and match it against encodings known to any and all Lisp implementation???
-  '((:default :default) ; the implementation's default, which may vary depending on the environment.
-    (:utf-8 :utf8 :u8) ; our preferred default, environment-independent.
+  '((:utf-8 :utf8 :u8) ; our preferred default, environment-independent.
     (:us-ascii :ascii :iso-646-us :ANSI_X3.4-1968) ; in practice the lowest common denominator
     (:iso-646 :|646|) ; even lower common denominator for old international encodings
     ;;; ISO/IEC 8859
@@ -175,6 +176,9 @@
                         (when ae (funcall ae)))
     :for n = (intern (string name) :keyword) ;; is this needed?
     :do (setf (gethash n *normalized-encodings*) name))
+  ;; Special case for :default,
+  ;; the meaning of which may vary depending on the environment.
+  (setf (gethash :default *normalized-encodings*) :default)
   (loop :for names :in *encodings*
     :for (name encoding) = (loop :for n :in names
                              :for e = (find-implementation-encoding n)
