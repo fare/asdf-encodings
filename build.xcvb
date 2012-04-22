@@ -2,6 +2,5 @@
 #+xcvb
 (module
  (:fullname "asdf-encodings"
-  :depends-on ("pkgdcl" "encodings" "autodetect"
-               "asdf-support" "initialization")
+  :depends-on ("initialization")
   :supersedes-asdf ("asdf-encodings")))

@@ -1,4 +1,4 @@
-#+xcvb (module (:depends-on ("pkgdcl")))
+#+xcvb (module (:depends-on ("encodings" "asdf-support" "autodetection")))
 
 ;;; Load-time Initialization.
 
