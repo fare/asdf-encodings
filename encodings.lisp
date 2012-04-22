@@ -4,9 +4,6 @@
 
 (in-package :asdf-encodings)
 
-(defvar *on-unsupported-encoding* :error
-  "One of :error, :warn or nil, specifies what to do when passed an unsupported encoding.")
-
 (defparameter *encodings*
   ;; Define valid names for an encoding.
   ;; We prefer the main name in Wikipedia,

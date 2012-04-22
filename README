@@ -2,12 +2,13 @@ ASDF-ENCODINGS
 
 This library allows you to use ASDF with Lisp source files
 that use an encoding different from either ASCII or UTF-8.
-It depends on ASDF 2.21 or later (actually 2.20.7 or later).
+It depends on ASDF 2.21 or later (actually 2.20.18 or later).
 
 TODO:
 (1) actually support more implementations.
 (2) Add a test suite.
 (3) Test it.
+(4) Add more corner cases.
 
 
 ==== Exported Functionality ====
@@ -30,3 +31,24 @@ function ENCODING-EXTERNAL-FORMAT (ENCODING &KEY (ON-ERROR *ON-UNSUPPORTED-ENCOD
   the current implementation's CL:OPEN, CL:LOAD or CL:COMPILE-FILE functions.
   If the encoding is not supported on this implementation, the ON-ERROR
   argument, which is one of :ERROR, :WARN, NIL, specifies what to do.
+
+variable *ON-UNSUPPORTED-ENCODING*
+  One of :error, :warn or nil,
+  specifies what to do when passed an unsupported encoding.
+  Defaults to :error.
+
+function DETECT-FILE-ENCODING (PATHNAME)
+  This function takes a pathname designator,
+  and returns a portable encoding as detected by the file contents,
+  either an emacs-style -*- coding: foo -*- declaration,
+  or something deduced from the octet patterns in the file.
+
+function NORMALIZE-ENCODING (ENCODING)
+  Given a portable encoding keyword, returns the normalized keyword
+  describing that encoding on the current implementations, if any,
+  or NIL if the encoding is not present on the implementation
+  (or not recognized by asdf-encodings).
+
+function FIND-IMPLEMENTATION-ENCODING (ENCODING)
+  Given a normalized encoding keyword, returns
+  an external-format suitable for use on the current implementation, if any.

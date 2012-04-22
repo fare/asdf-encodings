@@ -153,7 +153,7 @@
             ((cdr (assoc "encoding" options :test 'equalp)))
             ((cdr (assoc "coding" options :test 'equalp)))))))
 
-;;; Examine the 'file to determine the encoding.
+;;; Examine the file to determine the encoding.
 ;;; In some cases the encoding can be determined
 ;;; from the coding of the file itself,
 ;;; otherwise it may be specified in a file options line
@@ -162,7 +162,7 @@
 ;;; but is valid UTF-8 using then UTF-8 specific characters
 ;;; then :utf-8 is returned, otherwise :latin1 is returned.
 
-(defun detect-encoding (file)
+(defun detect-file-encoding (file)
   (let ((initial-encoding nil)
         (declared-encoding nil))
     (with-open-file (s file :element-type '(unsigned-byte 8)
