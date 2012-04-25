@@ -149,9 +149,10 @@
                                         (subseq ascii (1+ colon) semi))))
                 (push (cons option value) options)
                 (when (= semi end) (return nil)))))))
-      (cond ((cdr (assoc "external-format" options :test 'equalp)))
-            ((cdr (assoc "encoding" options :test 'equalp)))
-            ((cdr (assoc "coding" options :test 'equalp)))))))
+      (flet ((try (x)
+               (let ((o (cdr (assoc x options :test 'equalp))))
+                 (when o (intern (string-upcase o) :keyword)))))
+        (or (try "external-format") (try "encoding") (try "coding"))))))
 
 ;;; Examine the file to determine the encoding.
 ;;; In some cases the encoding can be determined
