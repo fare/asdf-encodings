@@ -151,7 +151,13 @@
                 (when (= semi end) (return nil)))))))
       (flet ((try (x)
                (let ((o (cdr (assoc x options :test 'equalp))))
-                 (when o (intern (string-upcase o) :keyword)))))
+                 (when o
+                   ;; strip Emacs-style EOL spec.
+                   ;; TODO: find a way to integrate it in the external-format,
+                   ;; on implementations that support it.
+                   (when (asdf:ends-with o "-unix") 
+                     (setf o (subseq o 0 (- (length o) 5))))
+                   (intern (string-upcase o) :keyword)))))
         (or (try "external-format") (try "encoding") (try "coding"))))))
 
 ;;; Examine the file to determine the encoding.
