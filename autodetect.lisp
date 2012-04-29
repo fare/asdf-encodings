@@ -274,7 +274,9 @@
                           ;; UTF-16, big-endian.
                           (setf initial-encoding :utf-16be))
                          (t
-                          (setf initial-encoding :latin1)))))
+                          (setf initial-encoding :utf-8-auto)))))
+                ((= available 1)
+                 (setf initial-encoding (if (< (aref buffer 0) #x80) :ascii :latin1)))
                 (t
                  ;; Empty file - just use the default.
                  (setf initial-encoding :default))))))
