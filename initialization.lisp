@@ -1,4 +1,4 @@
-#+xcvb (module (:depends-on ("encodings" "asdf-support" "autodetection")))
+#+xcvb (module (:depends-on ("encodings" "asdf-support" "autodetect")))
 
 ;;; Load-time Initialization.
 

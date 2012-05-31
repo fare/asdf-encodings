@@ -2,6 +2,6 @@
 #+xcvb
 (module
  (:fullname "asdf-encodings"
-  :build-depends-on ((:build "/asdf"))
+  :build-depends-on ((:asdf "asdf"))
   :depends-on ("initialization")
   :supersedes-asdf ("asdf-encodings")))
