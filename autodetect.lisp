@@ -155,7 +155,7 @@
                    ;; strip Emacs-style EOL spec.
                    ;; TODO: find a way to integrate it in the external-format,
                    ;; on implementations that support it.
-                   (when (asdf:ends-with o "-unix") 
+                   (when (equal "unix" (second (asdf::split-string o :max 2 :separator "-")))
                      (setf o (subseq o 0 (- (length o) 5))))
                    (intern (string-upcase o) :keyword)))))
         (or (try "external-format") (try "encoding") (try "coding"))))))
