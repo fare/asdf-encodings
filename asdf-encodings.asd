@@ -16,4 +16,4 @@
 
 (defmethod perform ((op test-op) (system (eql (find-system :asdf-encodings))))
   (asdf:load-system :asdf-encodings-test)
-  (funcall (asdf:find-symbol* :test-suite :asdf-encodings-test)))
+  (funcall (asdf::find-symbol* :test-suite :asdf-encodings-test)))
