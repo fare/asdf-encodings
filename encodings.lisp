@@ -145,7 +145,7 @@
   #+abcl (normalize-encoding encoding) ;; we bootstrap that in initialize-normalized-encodings
   #+allegro (excl:find-external-format encoding)
   #+clozure (ignore-errors (ccl::normalize-external-format t encoding))
-  #+clisp (asdf:find-symbol* encoding :charset)
+  #+clisp (find-symbol* encoding :charset)
   #+cmu (stream::find-external-format encoding)
   #+ecl (ignore-errors (ext:make-encoding encoding))
   #+lispworks

@@ -3,7 +3,9 @@
 (in-package :cl)
 
 (defpackage :asdf-encodings
-  (:use :cl)
+  (:use :cl :asdf)
+  (:import-from :asdf
+   #:find-symbol*)
   (:export
    #:encoding-external-format
    #:*on-unsupported-encoding*
