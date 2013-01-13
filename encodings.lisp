@@ -142,14 +142,15 @@
 
 (defun find-implementation-encoding (encoding)
   (declare (ignorable encoding)) nil ;; default, for unsupported implementations
-  #+abcl (normalize-encoding encoding) ;; we bootstrap that in initialize-normalized-encodings
-  #+allegro (excl:find-external-format encoding)
-  #+clozure (ignore-errors (ccl::normalize-external-format t encoding))
-  #+clisp (find-symbol* encoding :charset)
-  #+cmu (stream::find-external-format encoding)
-  #+ecl (ignore-errors (ext:make-encoding encoding))
-  #+lispworks
-  (or
+  (ignore-errors
+   #+abcl (normalize-encoding encoding) ;; we bootstrap that in initialize-normalized-encodings
+   #+allegro (excl:find-external-format encoding)
+   #+clozure (ccl::normalize-external-format t encoding)
+   #+clisp (find-symbol* encoding :charset)
+   #+cmu (stream::find-external-format encoding)
+   #+ecl (ext:make-encoding encoding)
+   #+lispworks
+   (or
    (case encoding
      ;; lispworks supports a :jis, but which encoding is it?
      ((:latin-1 :ascii :utf-8 :sjis :euc-jp :macos-roman) encoding)
@@ -162,10 +163,10 @@
           (multiple-value-bind (i l)
               (parse-integer s :start 3 :junk-allowed t)
             (and i (= l (length s)) `(win32:code-page :id ,i))))))
-  #+sbcl (and (sb-impl::get-external-format encoding) encoding)
-  #+scl (and (or (lisp::encoding-character-width encoding) ; only works for fixed-width
-                 (member encoding '(:utf-8 :utf-16 :utf-16le :utf-16be))) ; more may exist
-             encoding))
+   #+sbcl (and (sb-impl::get-external-format encoding) encoding)
+   #+scl (and (or (lisp::encoding-character-width encoding) ; only works for fixed-width
+                  (member encoding '(:utf-8 :utf-16 :utf-16le :utf-16be))) ; more may exist
+              encoding)))
 
 (defun initialize-normalized-encodings (&optional warn)
   #+abcl

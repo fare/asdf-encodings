@@ -1,18 +1,17 @@
 ;;; -*- Mode: Lisp ; Base: 10 ; Syntax: ANSI-Common-Lisp -*-
 
-;; Ensure upgrade, so #+asdf-unicode below has better chances of working.
-(asdf:oos 'asdf:load-op :asdf)
-
 (asdf:defsystem :asdf-encodings
+  :defsystem-depends-on (:asdf)
   :description "Portable interface to character encodings and your implementation's external-format"
-  :depends-on ((:version "asdf" "2.20.18"))
-  #+asdf-unicode #+asdf-unicode ;; disabled in implementations with no unicode support.
   :components
   ((:file "pkgdcl")
    (:file "encodings" :depends-on ("pkgdcl"))
    (:file "autodetect" :depends-on ("pkgdcl"))
    (:file "asdf-support" :depends-on ("pkgdcl"))
    (:file "initialization" :depends-on ("pkgdcl"))))
+
+(unless (find-symbol (string :component-encoding) :asdf)
+  (error "asdf-encodings requires asdf 2.20.18 or later"))
 
 (defmethod perform ((op test-op) (system (eql (find-system :asdf-encodings))))
   (asdf:load-system :asdf-encodings-test)
