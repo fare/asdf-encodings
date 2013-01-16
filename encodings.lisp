@@ -147,7 +147,7 @@
    #+allegro (excl:find-external-format encoding)
    #+clozure (ccl::normalize-external-format t encoding)
    #+clisp (find-symbol* encoding :charset nil)
-   #+cmu (stream::find-external-format encoding)
+   #+cmu (stream::ef-name (stream::find-external-format encoding))
    #+ecl (ext:make-encoding encoding)
    #+lispworks
    (or
