@@ -146,7 +146,7 @@
    #+abcl (normalize-encoding encoding) ;; we bootstrap that in initialize-normalized-encodings
    #+allegro (excl:find-external-format encoding)
    #+clozure (ccl::normalize-external-format t encoding)
-   #+clisp (find-symbol* encoding :charset)
+   #+clisp (find-symbol* encoding :charset nil)
    #+cmu (stream::find-external-format encoding)
    #+ecl (ext:make-encoding encoding)
    #+lispworks
@@ -170,7 +170,7 @@
 
 (defun initialize-normalized-encodings (&optional warn)
   #+abcl
-  (loop :for name :in (let ((ae (find-symbol* :available-encodings :sys)))
+  (loop :for name :in (let ((ae (find-symbol* :available-encodings :sys nil)))
                         (when ae (funcall ae)))
     :for n = (intern (string name) :keyword) ;; is this needed?
     :do (setf (gethash n *normalized-encodings*) name))
