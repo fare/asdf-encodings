@@ -1,6 +1,6 @@
 ;;; -*- Mode: Lisp ; Base: 10 ; Syntax: ANSI-Common-Lisp -*-
 
-(asdf:defsystem :asdf-encodings
+(defsystem :asdf-encodings
   :defsystem-depends-on (:asdf)
   :description "Portable interface to character encodings and your implementation's external-format"
   :components
@@ -14,5 +14,5 @@
   (error "asdf-encodings requires asdf 2.20.18 or later"))
 
 (defmethod perform ((op test-op) (system (eql (find-system :asdf-encodings))))
-  (asdf:load-system :asdf-encodings-test)
+  (load-system :asdf-encodings-test)
   (funcall (asdf::find-symbol* :test-suite :asdf-encodings-test)))

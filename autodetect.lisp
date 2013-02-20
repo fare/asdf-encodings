@@ -169,134 +169,124 @@
 ;;; but is valid UTF-8 using then UTF-8 specific characters
 ;;; then :utf-8 is returned, otherwise :latin1 is returned.
 
-(defun detect-file-encoding (file)
-  (let ((initial-encoding nil)
-        (declared-encoding nil))
-    (with-open-file (s file :element-type '(unsigned-byte 8)
-                       :direction :input)
-      ;; Buffer a chunk from the start of the file.
-      (let* ((buffer (make-array 1024 :element-type '(unsigned-byte 8)))
-             (available (read-sequence buffer s)))
-        (labels ((decode-declaration (start size offset)
-                   ;; Look at the first four bytes to determine the encoding.
-                   (setf declared-encoding
-                         (decode-ascii-encoded-declaration
-                          buffer available start size offset))))
-          (cond ((>= available 4)
-                 (let ((b1 (aref buffer 0))
-                       (b2 (aref buffer 1))
-                       (b3 (aref buffer 2))
-                       (b4 (aref buffer 3)))
-                   (cond ((and (= b1 #x00) (= b2 #x00) (= b3 #xFE) (= b4 #xFF))
-                          ;; UCS-4, big-endian (1234 order).
-                          (setf initial-encoding :ucs-4be)
-                          (decode-declaration 4 4 3))
-                         ((and (= b1 #xff) (= b2 #xfe))
-                          (cond ((and (= b3 #x00) (= b4 #x00))
-                                 ;; UCS-4, little-endian (4321 order).
-                                 (setf initial-encoding :ucs-4le)
-                                 (decode-declaration 4 4 0))
-                                (t
-                                 ;; UTF-16, little-endian
-                                 (setf initial-encoding :utf-16le)
-                                 (decode-declaration 2 2 0))))
-                         ((and (= b1 #x00) (= b2 #x00) (= b3 #xFF) (= b4 #xFE))
-                          ;; UCS-4, order (2143).
-                          (decode-declaration 4 4 2))
-                         ((and (= b1 #xfe) (= b2 #xff))
-                          (cond ((and (= b3 #x00) (= b4 #x00))
-                                 ;; UCS-4, order (3412).
-                                 (decode-declaration 4 4 1))
-                                (t
-                                 ;; UTF-16, big-endian.
-                                 (setf initial-encoding :utf-16be)
-                                 (decode-declaration 2 2 1))))
-                         ((and (= b1 #xEF) (= b2 #xBB) (= b3 #xBF))
-                          ;; UTF-8 BOM.
-                          (setf initial-encoding :utf-8)
-                          (decode-declaration 3 1 0))
-                         ;;
-                         ;; Without a byte order mark, check for ASCII ';'.
-                         ((and (= b1 #x3B) (= b2 #x00) (= b3 #x00) (= b4 #x00))
-                          (setf initial-encoding :ucs-4le)
-                          (decode-declaration 0 4 0))
-                         ((and (= b1 #x00) (= b2 #x3B) (= b3 #x00) (= b4 #x00))
-                          (decode-declaration 0 4 1))
-                         ((and (= b1 #x00) (= b2 #x00) (= b3 #x3B) (= b4 #x00))
-                          (decode-declaration 0 4 2))
-                         ((and (= b1 #x00) (= b2 #x00) (= b3 #x00) (= b4 #x3B))
-                          (setf initial-encoding :ucs-4be)
-                          (decode-declaration 0 4 3))
-                         ;;
-                         ;; Check for ASCII ';;'.
-                         ((and (= b1 #x3B) (= b2 #x00) (= b3 #x3B) (= b4 #x00))
-                          (setf initial-encoding :utf-16le)
-                          (decode-declaration 0 2 0))
-                         ((and (= b1 #x00) (= b2 #x3B) (= b3 #x00) (= b4 #x3B))
-                          (setf initial-encoding :utf-16be)
-                          (decode-declaration 0 2 1))
-                         ((and (= b1 #x3B) (= b2 #x3B))
-                          (setf initial-encoding :utf-8-auto)
-                          (decode-declaration 0 1 0))
-                         ;;
-                         ;; Check for UTF-7 ';'.
-                         ((and (= b1 #x2B) (= b2 #x41) (= b3 #x44))
-                          (setf initial-encoding :utf-7))
-                         ;;
-                         ;; Check for ISO-2022-KR.
-                         ((and (= b1 #x1B) (= b2 #x24) (= b3 #x29) (= b4 #x43))
-                          (setf initial-encoding :iso-2022-kr)
-                          (decode-declaration 4 1 0))
-                         ;;
-                         ;; Check for EBCDIC ';;'.
-                         ((and (= b1 #x5e) (= b2 #x5e))
-                          ;; EBCDIC - TODO read the declaration to determine the code page.
-                          (setf initial-encoding :ebcdic-us))
-                         (t
-                          ;; Not detected and no declaration, detect UTF-8.
-                          (setf initial-encoding :utf-8-auto)))))
-                ((= available 3)
-                 (let ((b1 (aref buffer 0))
-                       (b2 (aref buffer 1))
-                       (b3 (aref buffer 2)))
-                   (cond ((and (= b1 #xEF) (= b2 #xBB) (= b3 #xBF))
-                          ;; UTF-8 BOM.
-                          (setf initial-encoding :utf-8))
-                         (t
-                          (setf initial-encoding :utf-8-auto)))))
-                ((= available 2)
-                 (let ((b1 (aref buffer 0))
-                       (b2 (aref buffer 1)))
-                   (cond ((and (= b1 #xff) (= b2 #xfe))
-                          ;; UTF-16, little-endian
-                          (setf initial-encoding :utf-16le))
-                         ((and (= b1 #xfe) (= b2 #xff))
-                          ;; UTF-16, big-endian.
-                          (setf initial-encoding :utf-16be))
-                         (t
-                          (setf initial-encoding :utf-8-auto)))))
-                ((= available 1)
-                 (setf initial-encoding (if (< (aref buffer 0) #x80) :ascii :latin1)))
-                (t
-                 ;; Empty file - just use the default.
-                 (setf initial-encoding :default))))))
-    (cond ((and (not initial-encoding) (not declared-encoding))
-           :latin1)
-          ((or (and (not declared-encoding)
-                    (eq initial-encoding :utf-8-auto))
-               (equalp declared-encoding :utf-8-auto))
-           (multiple-value-bind (valid-utf-8 nonasciip utf-8-bom)
-               (detect-utf-8 file)
-             (cond ((and valid-utf-8 (or nonasciip utf-8-bom))
-                    :utf-8)
-                   (nonasciip
-                    :latin1)
+(defun detect-buffer-encoding-header (buffer available)
+  (flet ((x (initial-encoding &optional start size offset)
+           (return-from detect-buffer-encoding-header (values initial-encoding start size offset))))
+    (cond ((>= available 4)
+           (let ((b1 (aref buffer 0))
+                 (b2 (aref buffer 1))
+                 (b3 (aref buffer 2))
+                 (b4 (aref buffer 3)))
+             (cond ((and (= b1 #x00) (= b2 #x00) (= b3 #xFE) (= b4 #xFF))
+                    ;; UCS-4, big-endian (1234 order).
+                    (x :ucs-4be 4 4 3))
+                   ((and (= b1 #xff) (= b2 #xfe))
+                    (cond ((and (= b3 #x00) (= b4 #x00))
+                           ;; UCS-4, little-endian (4321 order).
+                           (x :ucs-4le 4 4 0))
+                          (t
+                           ;; UTF-16, little-endian
+                           (x :utf-16le 2 2 0))))
+                   ((and (= b1 #x00) (= b2 #x00) (= b3 #xFF) (= b4 #xFE))
+                    ;; UCS-4, order (2143).
+                    (x nil 4 4 2))
+                   ((and (= b1 #xfe) (= b2 #xff))
+                    (cond ((and (= b3 #x00) (= b4 #x00))
+                           ;; UCS-4, order (3412).
+                           (x nil 4 4 1))
+                          (t
+                           ;; UTF-16, big-endian.
+                           (x :utf-16be 2 2 1))))
+                   ((and (= b1 #xEF) (= b2 #xBB) (= b3 #xBF))
+                    ;; UTF-8 BOM.
+                    (x :utf-8 3 1 0))
+                   ;; Without a byte order mark, check for ASCII ';'.
+                   ((and (= b1 #x3B) (= b2 #x00) (= b3 #x00) (= b4 #x00))
+                    (x :ucs-4le 0 4 0))
+                   ((and (= b1 #x00) (= b2 #x3B) (= b3 #x00) (= b4 #x00))
+                    (x nil 0 4 1))
+                   ((and (= b1 #x00) (= b2 #x00) (= b3 #x3B) (= b4 #x00))
+                    (x nil 0 4 2))
+                   ((and (= b1 #x00) (= b2 #x00) (= b3 #x00) (= b4 #x3B))
+                    (x :ucs-4be 0 4 3))
+                   ;; Check for ASCII ';;'.
+                   ((and (= b1 #x3B) (= b2 #x00) (= b3 #x3B) (= b4 #x00))
+                    (x :utf-16le 0 2 0))
+                   ((and (= b1 #x00) (= b2 #x3B) (= b3 #x00) (= b4 #x3B))
+                    (x :utf-16be 0 2 1))
+                   ((and (= b1 #x3B) (= b2 #x3B))
+                    (x :utf-8-auto 0 1 0))
+                   ;;
+                   ;; Check for UTF-7 ';'.
+                   ((and (= b1 #x2B) (= b2 #x41) (= b3 #x44))
+                    (x :utf-7))
+                   ;;
+                   ;; Check for ISO-2022-KR.
+                   ((and (= b1 #x1B) (= b2 #x24) (= b3 #x29) (= b4 #x43))
+                    (x :iso-2022-kr 4 1 0))
+                   ;;
+                   ;; Check for EBCDIC ';;'.
+                   ((and (= b1 #x5e) (= b2 #x5e))
+                    ;; EBCDIC - TODO read the declaration to determine the code page.
+                    (x :ebcdic-us))
                    (t
-                    :ascii))))
-          ((or (not declared-encoding)
-               (member initial-encoding '(:utf-16le :utf-16be
-                                          :ucs-4le :ucs-4be)))
-           ;; Use the detected encoding.
-           initial-encoding)
+                    ;; Not detected and no declaration, detect UTF-8.
+                    (x :utf-8-auto)))))
+          ((= available 3)
+           (let ((b1 (aref buffer 0))
+                 (b2 (aref buffer 1))
+                 (b3 (aref buffer 2)))
+             (cond ((and (= b1 #xEF) (= b2 #xBB) (= b3 #xBF))
+                    ;; UTF-8 BOM.
+                    (x :utf-8))
+                   (t
+                    (x :utf-8-auto)))))
+          ((= available 2)
+           (let ((b1 (aref buffer 0))
+                 (b2 (aref buffer 1)))
+             (cond ((and (= b1 #xff) (= b2 #xfe))
+                    ;; UTF-16, little-endian
+                    (x :utf-16le))
+                   ((and (= b1 #xfe) (= b2 #xff))
+                    ;; UTF-16, big-endian.
+                    (x :utf-16be))
+                   (t
+                    (x :utf-8-auto)))))
+          ((= available 1)
+           (x (if (< (aref buffer 0) #x80) :ascii :latin1)))
           (t
-           declared-encoding))))
+           ;; Empty file - just use the default.
+           (x :default)))))
+
+(defun detect-file-encoding (file)
+  (with-open-file (s file :element-type '(unsigned-byte 8)
+                          :direction :input)
+    ;; Buffer a chunk from the start of the file.
+    (let* ((buffer (make-array 1024 :element-type '(unsigned-byte 8)))
+           (available (read-sequence buffer s)))
+      (multiple-value-bind (initial-encoding start size offset)
+          (detect-buffer-encoding-header buffer available)
+        (let ((declared-encoding
+                (when start
+                  (decode-ascii-encoded-declaration
+                   buffer available start size offset))))
+          (cond ((and (not initial-encoding) (not declared-encoding))
+                 :latin1)
+                ((or (and (not declared-encoding)
+                          (eq initial-encoding :utf-8-auto))
+                     (equalp declared-encoding :utf-8-auto))
+                 (multiple-value-bind (valid-utf-8 nonasciip utf-8-bom)
+                     (detect-utf-8 file)
+                   (cond ((and valid-utf-8 (or nonasciip utf-8-bom))
+                          :utf-8)
+                         (nonasciip
+                          :latin1)
+                         (t
+                          :ascii))))
+                ((or (not declared-encoding)
+                     (member initial-encoding '(:utf-16le :utf-16be
+                                                :ucs-4le :ucs-4be)))
+                 ;; Use the detected encoding.
+                 initial-encoding)
+                (t
+                 declared-encoding)))))))
