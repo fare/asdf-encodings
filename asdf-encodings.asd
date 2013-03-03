@@ -1,7 +1,7 @@
 ;;; -*- Mode: Lisp ; Base: 10 ; Syntax: ANSI-Common-Lisp -*-
 
 (defsystem :asdf-encodings
-  :defsystem-depends-on (:asdf)
+  :defsystem-depends-on (:asdf #-asdf3 :asdf-driver)
   :description "Portable interface to character encodings and your implementation's external-format"
   :components
   ((:file "pkgdcl")
