@@ -8,7 +8,7 @@
    (:file "encodings" :depends-on ("pkgdcl"))
    (:file "autodetect" :depends-on ("pkgdcl"))
    (:file "asdf-support" :depends-on ("pkgdcl"))
-   (:file "initialization" :depends-on ("pkgdcl"))))
+   (:file "initialization" :depends-on ("encodings" "autodetect" "asdf-support"))))
 
 (unless (find-symbol (string :component-encoding) :asdf)
   (error "asdf-encodings requires asdf 2.20.18 or later"))
