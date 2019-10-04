@@ -145,10 +145,10 @@
   (ignore-errors
    #+abcl (normalize-encoding encoding) ;; we bootstrap that in initialize-normalized-encodings
    #+allegro (excl:find-external-format encoding)
+   #+(or clasp ecl) (ext:make-encoding encoding)
    #+clozure (ccl::normalize-external-format t encoding)
    #+clisp (find-symbol* encoding :charset nil)
    #+cmu (stream::ef-name (stream::find-external-format encoding))
-   #+ecl (ext:make-encoding encoding)
    #+lispworks
    (or
     (case encoding
